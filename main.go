@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -218,6 +219,25 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	case strings.HasPrefix(cacheURL, "http:"):
 		protocol = "http://"
 		cacheURL = strings.TrimPrefix(cacheURL, "http:")
+	case strings.HasPrefix(cacheURL, "local/"):
+		if config.LocalRoot == "" {
+			olo.Error("Local fileserving not configured for %s", cacheURL)
+			http.Error(w, "Local fileserving not configured", http.StatusForbidden)
+			return
+		}
+		//localfile := config.LocalRoot + strings.TrimPrefix(cacheURL, "local")
+		elements := append([]string{config.LocalRoot}, strings.Split(strings.TrimPrefix(cacheURL, "local"), "/")...)
+		localfile := filepath.Join(elements...)
+		olo.Info("Local fileserving: %s from %s", cacheURL, localfile)
+
+		_, err := os.Stat(localfile)
+		if err != nil {
+			olo.Error("Local file '%s' not found for request to '%s'", localfile, cacheURL)
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		http.ServeFile(w, r, localfile)
+		return
 	}
 
 	fullUrl := protocol + cacheURL

@@ -27,6 +27,7 @@ type Config struct {
 	CertificateFile            string                  `yaml:"ssl_certificate_file"`
 	Proxy                      string                  `yaml:"proxy"`
 	ProxyURL                   *url.URL                `yaml:"proxyURL"`
+	LocalRoot                  string                  `yaml:"local_root"`
 	CacheFolder                string                  `yaml:"cache_folder"`
 	CacheFolderHTTPS           string                  `yaml:"cache_folder_https"`
 	DefaultCacheTTLString      string                  `yaml:"default_cache_ttl"`
