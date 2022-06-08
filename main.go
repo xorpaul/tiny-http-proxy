@@ -68,9 +68,8 @@ func main() {
 
 	// prometheus metrics server
 	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe("127.0.0.1:2112", nil)
 	olo.Info("Listening on http://127.0.0.1:2112/metrics")
-
+	olo.Fatal(http.ListenAndServe("127.0.0.1:8082", nil).Error())
 }
 
 func loadConfig(configFile string) {
