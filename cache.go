@@ -277,7 +277,6 @@ func checkCacheTTL(filePath string, requestedURL string, defaultCacheTTL time.Du
 			return err
 		}
 		olo.Error("found cache item while starting service, but it was removed afterwards, trying to get it again: '%s'", requestedURL)
-		olo.Fatal("found cache item while starting service, but it was removed afterwards, trying to get it again: '%s'", requestedURL)
 		err = checkCacheTTL(filePath, requestedURL, defaultCacheTTL)
 		if err != nil {
 			return err
