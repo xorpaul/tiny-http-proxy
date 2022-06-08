@@ -60,11 +60,19 @@ func main() {
 	}
 	olo.Debug("Config loaded")
 
+	if config.ListenPort == 0 && config.ListenSSLPort == 0 {
+		olo.Fatal("Both listen_port and list_ssl_port set to 0, need to enable at least one")
+	}
+
 	prepare()
 	olo.Debug("Cache initialized")
 
-	go serve()
-	go serveTLS()
+	if config.ListenPort > 0 {
+		go serve()
+	}
+	if config.ListenSSLPort > 0 {
+		go serveTLS()
+	}
 
 	// prometheus metrics server
 	http.Handle("/metrics", promhttp.Handler())
@@ -201,6 +209,17 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 		handleError(nil, err, w)
 		return
 	}
+	// Override destination protocol based on host prefix (http:... or https:...)
+	// and serve /local/<path>/<file> from local directory (local_root)
+	switch {
+	case strings.HasPrefix(cacheURL, "https:"):
+		protocol = "https://"
+		cacheURL = strings.TrimPrefix(cacheURL, "https:")
+	case strings.HasPrefix(cacheURL, "http:"):
+		protocol = "http://"
+		cacheURL = strings.TrimPrefix(cacheURL, "http:")
+	}
+
 	fullUrl := protocol + cacheURL
 	olo.Info("Full incoming request for '%s' from '%s'", fullUrl, requesterIP)
 
