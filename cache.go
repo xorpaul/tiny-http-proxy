@@ -272,7 +272,7 @@ func checkCacheTTL(filePath string, requestedURL string, defaultCacheTTL time.Du
 	fi, err := os.Stat(filePath)
 	if err != nil {
 		promCounters["CACHE_ITEM_MISSING"].Inc()
-		_, err := GetRemote(requestedURL)
+		_, err := GetRemote(requestedURL, "")
 		if err != nil {
 			return err
 		}
@@ -308,7 +308,7 @@ func checkCacheTTL(filePath string, requestedURL string, defaultCacheTTL time.Du
 	if time.Now().After(validUntil) {
 		olo.Info("CACHE_TOO_OLD for requested URL '%s'", requestedURL)
 		promCounters["CACHE_TOO_OLD"].Inc()
-		_, err := GetRemote(requestedURL)
+		_, err := GetRemote(requestedURL, "")
 		if err != nil {
 			if config.ReturnCacheIfRemoteFails {
 				olo.Info("checking if remote " + requestedURL + " has a different/newer version failed, so provide the cached item as a fallback")

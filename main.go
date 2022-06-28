@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -221,12 +222,18 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 		promCounters[requestedFQDN].Inc()
 	}
 
+	// basic auth
+	username, password, basicOk := r.BasicAuth()
+	basicAuth := ""
+	if basicOk {
+		basicAuth = basicAuthentication(username, password)
+	}
 	// Cache miss -> Load data from requested URL and add to cache
 	if busy, ok := cache.has(fullUrl); !ok {
 		olo.Info("CACHE_MISS for requested '%s'", fullUrl)
 		promCounters["CACHE_MISS"].Inc()
 		defer busy.Unlock()
-		response, err := GetRemote(fullUrl)
+		response, err := GetRemote(fullUrl, basicAuth)
 		if err != nil {
 			handleError(response, err, w)
 			return
@@ -250,7 +257,12 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetRemote(requestedURL string) (*http.Response, error) {
+func basicAuthentication(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func GetRemote(requestedURL string, basicAuth string) (*http.Response, error) {
 	if len(config.Proxy) > 0 {
 		olo.Info("GETing " + requestedURL + " with proxy " + config.Proxy)
 	} else {
@@ -263,7 +275,9 @@ func GetRemote(requestedURL string) (*http.Response, error) {
 	}
 	req.Header.Set("User-Agent", "https://github.com/xorpaul/tinyproxy/")
 	req.Header.Set("Connection", "keep-alive")
-
+	if basicAuth != "" {
+		req.Header.Add("Authorization", "Basic "+basicAuth)
+	}
 	before := time.Now()
 	response, err := client.Do(req)
 	duration := time.Since(before).Seconds()
