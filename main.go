@@ -234,12 +234,14 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 		password,
 		basicOk,
 	}
+	header := http.Header{}
 	// Cache miss -> Load data from requested URL and add to cache
 	if busy, ok := cache.has(fullUrl); !ok {
 		olo.Info("CACHE_MISS for requested '%s'", fullUrl)
 		promCounters["CACHE_MISS"].Inc()
 		defer busy.Unlock()
-		response, err := GetRemote(fullUrl, basicA)
+		response, err, t_header := GetRemote(fullUrl, basicA)
+		header = t_header
 		if err != nil {
 			handleError(response, err, w)
 			return
@@ -259,11 +261,17 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 		// browsers will never display content
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
 		w.Header().Set("Content-Disposition", "attachment")
+		for attr, val := range header {
+			if strings.ToLower(attr) == "www-authenticate" {
+				w.Header().Set(attr, val[0])
+				break
+			}
+		}
 		http.ServeContent(w, r, cacheURL, cacheResponse.loadedAt, cacheResponse.content)
 	}
 }
 
-func GetRemote(requestedURL string, basicA BasicAuth) (*http.Response, error) {
+func GetRemote(requestedURL string, basicA BasicAuth) (*http.Response, error, http.Header) {
 	if len(config.Proxy) > 0 {
 		olo.Info("GETing " + requestedURL + " with proxy " + config.Proxy)
 	} else {
@@ -284,7 +292,7 @@ func GetRemote(requestedURL string, basicA BasicAuth) (*http.Response, error) {
 	duration := time.Since(before).Seconds()
 	olo.Debug("GETing " + requestedURL + " took " + strconv.FormatFloat(duration, 'f', 5, 64) + "s")
 	if err != nil {
-		return response, err
+		return response, err, response.Header
 	}
 
 	var reader io.Reader
@@ -294,12 +302,12 @@ func GetRemote(requestedURL string, basicA BasicAuth) (*http.Response, error) {
 		promCounters["REMOTE_OK"].Inc()
 		err = cache.put(requestedURL, &reader, response.ContentLength)
 		if err != nil {
-			return response, err
+			return response, err, response.Header
 		}
 		defer response.Body.Close()
-		return response, nil
+		return response, nil, response.Header
 	} else {
 		promCounters["REMOTE_ERRORS"].Inc()
-		return response, errors.New("GET " + requestedURL + " returned " + strconv.Itoa(response.StatusCode))
+		return response, errors.New("GET " + requestedURL + " returned " + strconv.Itoa(response.StatusCode)), response.Header
 	}
 }
