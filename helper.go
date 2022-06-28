@@ -14,7 +14,11 @@ import (
 )
 
 func handleError(response *http.Response, err error, w http.ResponseWriter) {
-	olo.Error(err.Error())
+	if response.StatusCode == 401 {
+		olo.Info(err.Error())
+	} else {
+		olo.Error(err.Error())
+	}
 	if response != nil {
 		for attr, val := range response.Header {
 			if strings.ToLower(attr) == "www-authenticate" {
