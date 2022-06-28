@@ -261,11 +261,9 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 		// browsers will never display content
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
 		w.Header().Set("Content-Disposition", "attachment")
+		w.Header().Set("Test", "attachment")
 		for attr, val := range header {
-			if strings.ToLower(attr) == "www-authenticate" {
-				w.Header().Set(attr, val[0])
-				break
-			}
+			w.Header().Set(attr, val[0])
 		}
 		http.ServeContent(w, r, cacheURL, cacheResponse.loadedAt, cacheResponse.content)
 	}
