@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,6 +34,12 @@ var (
 	promCounters  map[string]prometheus.Counter
 	promSummaries map[string]prometheus.Summary
 )
+
+type BasicAuth struct {
+	Username string
+	Password string
+	Ok       bool
+}
 
 func main() {
 
@@ -224,16 +229,17 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 
 	// basic auth
 	username, password, basicOk := r.BasicAuth()
-	basicAuth := ""
-	if basicOk {
-		basicAuth = basicAuthentication(username, password)
+	basicA := BasicAuth{
+		username,
+		password,
+		basicOk,
 	}
 	// Cache miss -> Load data from requested URL and add to cache
 	if busy, ok := cache.has(fullUrl); !ok {
 		olo.Info("CACHE_MISS for requested '%s'", fullUrl)
 		promCounters["CACHE_MISS"].Inc()
 		defer busy.Unlock()
-		response, err := GetRemote(fullUrl, basicAuth)
+		response, err := GetRemote(fullUrl, basicA)
 		if err != nil {
 			handleError(response, err, w)
 			return
@@ -244,7 +250,7 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The cache has definitely the data we want, so get a reader for that
-	cacheResponse, err := cache.get(fullUrl, defaultCacheTTL)
+	cacheResponse, err := cache.get(fullUrl, defaultCacheTTL, basicA)
 
 	if err != nil {
 		handleError(nil, err, w)
@@ -257,12 +263,7 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func basicAuthentication(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-func GetRemote(requestedURL string, basicAuth string) (*http.Response, error) {
+func GetRemote(requestedURL string, basicA BasicAuth) (*http.Response, error) {
 	if len(config.Proxy) > 0 {
 		olo.Info("GETing " + requestedURL + " with proxy " + config.Proxy)
 	} else {
@@ -275,8 +276,8 @@ func GetRemote(requestedURL string, basicAuth string) (*http.Response, error) {
 	}
 	req.Header.Set("User-Agent", "https://github.com/xorpaul/tinyproxy/")
 	req.Header.Set("Connection", "keep-alive")
-	if basicAuth != "" {
-		req.Header.Add("Authorization", "Basic "+basicAuth)
+	if basicA.Ok {
+		req.SetBasicAuth(basicA.Username, basicA.Password)
 	}
 	before := time.Now()
 	response, err := client.Do(req)

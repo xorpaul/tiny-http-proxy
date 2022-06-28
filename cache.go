@@ -141,7 +141,7 @@ func (c *Cache) has(requestedURL string) (*sync.Mutex, bool) {
 	return lock, false
 }
 
-func (c *Cache) get(requestedURL string, defaultCacheTTL time.Duration) (CacheResponse, error) {
+func (c *Cache) get(requestedURL string, defaultCacheTTL time.Duration, basicA BasicAuth) (CacheResponse, error) {
 	cacheURL, err := removeSchemeFromURL(requestedURL)
 	if err != nil {
 		return CacheResponse{}, err
@@ -166,7 +166,7 @@ func (c *Cache) get(requestedURL string, defaultCacheTTL time.Duration) (CacheRe
 	cacheFile := filepath.Join(fileCacheDir, uriEncoded)
 
 	// check if Cache is too old based on mtime, if so call getRemote() and renew cache
-	err = checkCacheTTL(cacheFile, requestedURL, defaultCacheTTL)
+	err = checkCacheTTL(cacheFile, requestedURL, defaultCacheTTL, basicA)
 	if err != nil {
 		return CacheResponse{}, err
 	}
@@ -268,17 +268,17 @@ func (c *Cache) put(requestedURL string, content *io.Reader, contentLength int64
 	return nil
 }
 
-func checkCacheTTL(filePath string, requestedURL string, defaultCacheTTL time.Duration) error {
+func checkCacheTTL(filePath string, requestedURL string, defaultCacheTTL time.Duration, basicA BasicAuth) error {
 	fi, err := os.Stat(filePath)
 	if err != nil {
 		promCounters["CACHE_ITEM_MISSING"].Inc()
-		_, err := GetRemote(requestedURL, "")
+		_, err := GetRemote(requestedURL, basicA)
 		if err != nil {
 			return err
 		}
 		olo.Error("found cache item while starting service, but it was removed afterwards, trying to get it again: '%s'", requestedURL)
 		olo.Fatal("found cache item while starting service, but it was removed afterwards, trying to get it again: '%s'", requestedURL)
-		err = checkCacheTTL(filePath, requestedURL, defaultCacheTTL)
+		err = checkCacheTTL(filePath, requestedURL, defaultCacheTTL, basicA)
 		if err != nil {
 			return err
 		}
@@ -308,7 +308,7 @@ func checkCacheTTL(filePath string, requestedURL string, defaultCacheTTL time.Du
 	if time.Now().After(validUntil) {
 		olo.Info("CACHE_TOO_OLD for requested URL '%s'", requestedURL)
 		promCounters["CACHE_TOO_OLD"].Inc()
-		_, err := GetRemote(requestedURL, "")
+		_, err := GetRemote(requestedURL, basicA)
 		if err != nil {
 			if config.ReturnCacheIfRemoteFails {
 				olo.Info("checking if remote " + requestedURL + " has a different/newer version failed, so provide the cached item as a fallback")
