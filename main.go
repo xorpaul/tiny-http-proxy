@@ -263,7 +263,9 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Disposition", "attachment")
 		w.Header().Set("Test", "attachment")
 		for attr, val := range header {
-			w.Header().Set(attr, val[0])
+			if strings.ToLower(attr) == "www-authenticate" {
+				w.Header().Set(attr, val[0])
+			}
 		}
 		http.ServeContent(w, r, cacheURL, cacheResponse.loadedAt, cacheResponse.content)
 	}
