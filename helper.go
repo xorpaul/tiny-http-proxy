@@ -16,6 +16,11 @@ import (
 func handleError(response *http.Response, err error, w http.ResponseWriter) {
 	olo.Error(err.Error())
 	if response != nil {
+		for attr, val := range response.Header {
+			if strings.ToLower(attr) == "www-authenticate" {
+				w.Header().Set(attr, val[0])
+			}
+		}
 		w.WriteHeader(response.StatusCode)
 		bodyBytes, err := io.ReadAll(response.Body)
 		if err != nil {
