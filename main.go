@@ -50,7 +50,7 @@ func main() {
 	version := *versionFlag
 
 	if version {
-		fmt.Println("tiny-http-proxy", buildversion, " Build time:", buildtime, "UTC")
+		fmt.Println("pkgproxy", buildversion, " Build time:", buildtime, "UTC")
 		os.Exit(0)
 	}
 

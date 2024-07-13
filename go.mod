@@ -1,4 +1,4 @@
-module github.com/xorpaul/tiny-http-proxy
+module github.com/xorpaul/pkgproxy
 
 go 1.17
 
