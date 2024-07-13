@@ -1,0 +1,9 @@
+[Unit]
+Description=pkgproxy https://github.com/xorpaul/pkgproxy
+
+[Service]
+WorkingDirectory=/etc/pkgproxy
+ExecStart=/etc/pkgproxy/pkgproxy
+
+[Install]
+WantedBy=multi-user.target
