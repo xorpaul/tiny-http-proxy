@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.3]
+
+### Changed
+
+- Updated Go toolchain from 1.25.0 to 1.26.7
+- Simplified module path from `github.com/xorpaul/pkgproxy` to `pkgproxy`
+- Updated vendor dependencies: `prometheus/client_golang` v1.23.2 → v1.24.1, `prometheus/common` v0.67.5 → v0.71.0, `prometheus/procfs` v0.20.1 → v0.22.0, `prometheus/client_model` v0.6.2 → v0.6.3, `mattn/go-colorable` v0.1.14 → v0.1.15, `mattn/go-isatty` v0.0.22 → v0.0.24, `xo/terminfo` v0.0.0 → v1.0.0, `golang.org/x/sys` v0.45.0 → v0.48.0, `golang.org/x/term` v0.43.0 → v0.46.0, `google.golang.org/protobuf` v1.36.11 → v1.36.12
+- Removed `go.yaml.in/yaml/v2` indirect dependency (replaced by `gopkg.in/yaml.v2`)
+
 ## [v0.2]
 
 ### Added
